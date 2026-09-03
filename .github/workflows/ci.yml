@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: smb
+          POSTGRES_PASSWORD: smb
+          POSTGRES_DB: smb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smb -d smb_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://smb:smb@localhost:5432/smb_test?schema=public
+      AUTH_SECRET: ci-only-secret-not-used-in-production-000000
+      APP_URL: http://localhost:3000
+      SCAN_MAX_BYTES: '1048576'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm --filter @smb/web db:migrate:deploy
+      - run: pnpm test
+      - name: Guard against ANTHROPIC_API_KEY in the client bundle
+        run: |
+          if grep -R "ANTHROPIC_API_KEY" apps/web/.next/static 2>/dev/null; then
+            echo "::error::Anthropic key referenced in client bundle"; exit 1
+          fi
+      - uses: microsoft/playwright-github-action@v1
+      - run: pnpm test:e2e

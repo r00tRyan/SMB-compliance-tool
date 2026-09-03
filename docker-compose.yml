@@ -1,0 +1,48 @@
+# Local development stack.
+#   cp .env.example .env
+#   docker compose up
+# Brings up PostgreSQL and the web application (with migrations + demo seed
+# applied on first boot). The scanner CLI runs on the host, not in compose.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: smb
+      POSTGRES_PASSWORD: smb
+      POSTGRES_DB: smb
+    ports:
+      - '5432:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U smb -d smb']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://smb:smb@db:5432/smb?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-dev-only-change-me-generate-a-real-32-byte-secret}
+      APP_URL: http://localhost:3000
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5}
+      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-1500}
+      SCAN_MAX_BYTES: ${SCAN_MAX_BYTES:-1048576}
+      ENABLE_DEMO_SEED: ${ENABLE_DEMO_SEED:-true}
+      DEMO_EMAIL: ${DEMO_EMAIL:-owner@acmedental.example}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-password-local-only}
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+
+volumes:
+  db-data:

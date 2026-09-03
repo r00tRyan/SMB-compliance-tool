@@ -1,0 +1,27 @@
+{
+  "name": "smb-compliance-tool",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "SMB Security Posture & Compliance Readiness Platform",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @smb/web dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @smb/web test:e2e",
+    "db:migrate": "pnpm --filter @smb/web db:migrate",
+    "db:seed": "pnpm --filter @smb/web db:seed",
+    "scan": "pnpm --filter @smb/scanner start",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

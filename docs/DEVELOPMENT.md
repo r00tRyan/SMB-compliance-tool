@@ -59,6 +59,11 @@ a demo asset and vice versa. Seeds are local-only and refuse to run when
   change → report → PDF → scan history → audit history. With the dev DB
   migrated + seeded: `pnpm --filter @smb/web test:e2e`.
 
+## Demo screenshots
+
+`node apps/web/scripts/demo-screenshots.mjs` (from a running, demo-seeded
+instance) refreshes the PNGs in `docs/screenshots/` used by the README.
+
 ## Conventions
 - Prettier + ESLint enforced; run `pnpm format` before committing.
 - No `TODO` for core MVP paths.

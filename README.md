@@ -11,6 +11,22 @@ in plain English, and verifies fixes on re-scan.
 > security controls. It does **not** make legal or regulatory compliance
 > determinations, and no report it produces is an audit or certification.
 
+## Screenshots
+
+Captured from the built-in demo organization (**Acme Dental**, all data tagged
+`DEMO DATA`). Regenerate with `node apps/web/scripts/demo-screenshots.mjs`
+against a running instance.
+
+![Dashboard — security score, "fix these first", category scores](docs/screenshots/02-dashboard.png)
+
+| Findings | Finding detail |
+| --- | --- |
+| ![Findings list with severity/status filters](docs/screenshots/03-findings.png) | ![What we found / why it matters / recommended fix / verification / CIS + NIST alignment](docs/screenshots/04-finding-detail.png) |
+
+| Assets | Assessment report |
+| --- | --- |
+| ![Asset inventory](docs/screenshots/05-assets.png) | ![Report — score, executive summary, posture, top risks, provenance tags](docs/screenshots/06-report.png) |
+
 ## Project status
 
 Runnable MVP. Verified end-to-end against PostgreSQL:

@@ -2,14 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 
-allowBuilds:
-  esbuild: true
-  "@node-rs/argon2": true
-  "@prisma/client": true
-  "@prisma/engines": true
-  prisma: true
-  unrs-resolver: true
-
+# Native dependencies whose install scripts are allowed to run.
 onlyBuiltDependencies:
   - esbuild
   - "@node-rs/argon2"

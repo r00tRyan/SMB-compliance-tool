@@ -12,10 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "composite": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "noEmit": true
   }
 }

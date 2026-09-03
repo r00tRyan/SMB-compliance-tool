@@ -13,12 +13,18 @@ import { decideTransition } from '../src/server/lifecycle';
 const prisma = new PrismaClient();
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Refusing to seed demo data in production.');
-  }
   if (process.env.ENABLE_DEMO_SEED !== 'true') {
     console.log('ENABLE_DEMO_SEED is not "true" — skipping demo seed.');
     return;
+  }
+  // The demo seed is opt-in via ENABLE_DEMO_SEED. In a production NODE_ENV it
+  // must be an explicit, deliberate choice (e.g. the local docker-compose stack,
+  // which runs the app with NODE_ENV=production but is still a dev environment).
+  if (process.env.NODE_ENV === 'production') {
+    console.warn(
+      'WARNING: seeding demo data with NODE_ENV=production because ENABLE_DEMO_SEED=true. ' +
+        'Demo credentials must never be enabled on a real production deployment.',
+    );
   }
 
   const email = (process.env.DEMO_EMAIL ?? 'owner@acmedental.example').toLowerCase();

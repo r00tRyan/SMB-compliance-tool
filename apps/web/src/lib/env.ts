@@ -29,3 +29,10 @@ export const env = (() => {
 
 export const isProd = env.NODE_ENV === 'production';
 export const aiConfigured = env.ANTHROPIC_API_KEY.length > 0;
+/**
+ * Mark session cookies `Secure` only when the app is actually served over HTTPS.
+ * Driven by APP_URL, not NODE_ENV — the local `docker compose up` stack runs a
+ * production build over plain http://localhost, where a Secure cookie would be
+ * silently dropped and log-in would appear to fail.
+ */
+export const cookieSecure = env.APP_URL.startsWith('https://');

@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
-import { env, isProd } from '@/lib/env';
+import { env, cookieSecure } from '@/lib/env';
 
 const COOKIE = 'smb_session';
 const MAX_AGE_SECONDS = 60 * 60 * 12; // 12h idle lifetime
@@ -21,7 +21,7 @@ export async function createSession(payload: SessionPayload): Promise<void> {
 
   cookies().set(COOKIE, token, {
     httpOnly: true,
-    secure: isProd,
+    secure: cookieSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: MAX_AGE_SECONDS,

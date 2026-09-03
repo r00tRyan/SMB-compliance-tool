@@ -2,11 +2,13 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Native dependencies whose install scripts are allowed to run.
-onlyBuiltDependencies:
-  - esbuild
-  - "@node-rs/argon2"
-  - "@prisma/client"
-  - "@prisma/engines"
-  - prisma
-  - unrs-resolver
+# Native dependencies whose install/postinstall scripts are allowed to run.
+# pnpm 11 refuses to run them (ERR_PNPM_IGNORED_BUILDS — a hard error in CI)
+# unless approved here. This is the map `pnpm approve-builds` maintains.
+allowBuilds:
+  "@node-rs/argon2": true
+  "@prisma/client": true
+  "@prisma/engines": true
+  esbuild: true
+  prisma: true
+  unrs-resolver: true

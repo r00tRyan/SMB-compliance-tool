@@ -322,7 +322,9 @@ export const windowsChecks: SecurityCheck[] = [
       if (!c.ok) return collectorError(c, 'password policy');
       const { minLength, maxAgeDays } = parseNetAccounts(c.text);
       if (minLength === undefined) return collectorError(c, 'password policy');
-      const parts = [`Minimum password length: ${minLength}`, `Maximum password age (days): ${maxAgeDays === Infinity ? 'Unlimited' : maxAgeDays}`];
+      const maxAge =
+        maxAgeDays === undefined ? 'not reported' : maxAgeDays === Infinity ? 'Unlimited' : String(maxAgeDays);
+      const parts = [`Minimum password length: ${minLength}`, `Maximum password age (days): ${maxAge}`];
       if (minLength >= 12) return pass(parts.join('; '));
       if (minLength >= 8) return warn(`${parts.join('; ')} (recommended minimum is 12)`);
       return fail(parts.join('; '));

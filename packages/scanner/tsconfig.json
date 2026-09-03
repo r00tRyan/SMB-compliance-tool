@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "paths": {
+      "@smb/shared": ["../shared/src/index.ts"],
+      "@smb/checks": ["../checks/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

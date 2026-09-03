@@ -2,7 +2,7 @@
   "name": "smb-compliance-tool",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "description": "SMB Security Posture & Compliance Readiness Platform",
   "engines": {
     "node": ">=20.11.0"

@@ -69,23 +69,48 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Quick start
 
+### Option A — Docker (recommended)
+
+Needs **Docker Desktop** (with virtualization enabled) or Docker Engine + Compose v2.
+
 ```bash
-git clone <this-repo>
-cd smb-compliance-tool
-cp .env.example .env          # edit AUTH_SECRET; ANTHROPIC_API_KEY optional
-docker compose up             # Postgres + web, migrations + demo seed applied
-# open http://localhost:3000  — sign in with the demo credentials from .env
+git clone https://github.com/r00tRyan/SMB-compliance-tool.git
+cd SMB-compliance-tool
+cp .env.example .env
+
+# Set a real session secret (any 32+ random bytes):
+#   Linux/macOS:  openssl rand -base64 32
+#   Windows PS:   [Convert]::ToBase64String((1..32|%{Get-Random -Max 256}))
+# Paste it as AUTH_SECRET in .env. ANTHROPIC_API_KEY is optional.
+
+docker compose up --build          # Postgres + web; migrations + demo seed run on first boot
 ```
 
-Without Docker:
+Open **http://localhost:3000**. Sign in with the demo credentials from `.env`
+(`owner@acmedental.example` / `demo-password-local-only`) or register a new
+organization.
+
+Stop with `docker compose down` (add `-v` to also wipe the database).
+
+### Option B — without Docker
+
+Needs **Node 20.11+**, **pnpm 11+** (`npm i -g pnpm`), and a **PostgreSQL 14+** instance.
 
 ```bash
+git clone https://github.com/r00tRyan/SMB-compliance-tool.git
+cd SMB-compliance-tool
 pnpm install
-# point DATABASE_URL at a local PostgreSQL 14+ instance in .env
-pnpm --filter @smb/web db:migrate
-pnpm --filter @smb/web db:seed
-pnpm dev
+cp .env.example .env
+# edit .env: point DATABASE_URL at your Postgres, set a real AUTH_SECRET
+pnpm --filter @smb/web db:migrate        # creates the schema
+pnpm --filter @smb/web db:seed           # optional: demo data (needs ENABLE_DEMO_SEED=true)
+pnpm dev                                  # http://localhost:3000
 ```
+
+> **Do not expose this to an untrusted network as-is.** It serves over plain
+> HTTP and has no TLS, agent authentication, or 2FA. It's built for localhost /
+> a trusted LAN / behind your own reverse proxy. Always replace the default
+> `AUTH_SECRET`.
 
 ## Running a real scan
 
@@ -123,6 +148,15 @@ functional without it. See [`docs/AI.md`](docs/AI.md).
 | [AI.md](docs/AI.md) | AI integration, prompts, guardrails, failure handling |
 | [REPORTING.md](docs/REPORTING.md) | Report structure, integrity model, PDF export |
 
+## Security
+
+This app stores configuration-weakness data about endpoints; treat it as
+sensitive. Controls implemented (server-side authz, tenant isolation, Argon2id,
+CSP/HSTS, registry-authoritative severity, AI prompt-injection defense, …) and
+how to report a vulnerability are in [`docs/SECURITY.md`](docs/SECURITY.md) and
+[`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
+
 ## License
 
-UNLICENSED — private project.
+[MIT](LICENSE) © r00tRyan. Provided as-is, with no warranty. This tool performs
+**posture assessment**, not a legal or regulatory compliance determination.

@@ -13,21 +13,27 @@ in plain English, and verifies fixes on re-scan.
 
 ## Project status
 
-MVP under active construction. What exists and is verified:
+Runnable MVP. Verified end-to-end against PostgreSQL:
 
 - **Core packages** — `shared`, `checks` (26 read-only Windows/Linux checks),
   `risk-engine` (deterministic scoring), `compliance` (CIS v8 + NIST CSF 2.0
   mapping), `ai` (Anthropic explanation layer with guardrails + graceful
-  fallback), `scanner` — all built and unit-tested (86 tests green).
+  fallback), `scanner`.
 - **Scanner CLI** (`security-agent`) — verified running against a real Windows host.
-- **Web app** — Next.js app with Prisma schema, Argon2id auth, tenant-isolated
-  data access, the scan-ingestion trust boundary, dashboard / assets / findings /
-  finding detail / scans / reports / activity pages, demo mode, PDF export.
-  `pnpm typecheck`, `pnpm lint`, and `next build` all pass.
+- **Web app** — auth, tenant isolation, the scan-ingestion trust boundary,
+  deterministic scoring + prioritization, finding lifecycle with verify-on-rescan,
+  CIS/NIST alignment, demo mode, AI explanations (degrade gracefully), reports +
+  PDF, audit log.
+- **Tests** — 105 passing: 86 unit (packages) + 11 lifecycle + 8 integration/security
+  (tenant isolation, malformed scan, unknown checkId, forged severity ignored,
+  detect→re-scan→resolved→score-up, regression reopen, no demo/real mixing).
+- **E2E** — the Playwright golden path (signup → asset → scan → score → finding →
+  re-scan → resolved → score change → report → PDF → history) passes.
+- `pnpm typecheck`, `pnpm lint`, `next build` all green.
 
-Not yet run end-to-end in this environment: Prisma migrations, the demo seed, and
-the Playwright golden-path test — all need a running PostgreSQL (`docker compose up`
-or a local install). See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+Known gaps: password-reset email delivery is stubbed (token flow exists); the
+in-memory rate limiter is per-instance; no 2FA. See
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## The product loop
 

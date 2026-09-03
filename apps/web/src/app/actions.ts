@@ -9,10 +9,11 @@ import { isProd } from '@/lib/env';
 import {
   AuthError,
   assertRole,
-  loginUser,
+  authenticateUser,
   logoutUser,
   registerUser,
   requireContext,
+  startSession,
 } from '@/server/auth';
 import { writeAudit } from '@/server/audit';
 import { ingestScan } from '@/server/ingest';
@@ -33,7 +34,8 @@ export async function registerAction(_prev: ActionState, form: FormData): Promis
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
   try {
-    await registerUser(parsed.data);
+    const { userId, email } = await registerUser(parsed.data);
+    await startSession({ userId, email });
   } catch (err) {
     return { error: err instanceof AuthError ? err.message : 'Could not create the account.' };
   }
@@ -44,7 +46,8 @@ export async function loginAction(_prev: ActionState, form: FormData): Promise<A
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: 'Enter your email and password.' };
   try {
-    await loginUser(parsed.data);
+    const identity = await authenticateUser(parsed.data);
+    await startSession(identity);
   } catch (err) {
     return { error: err instanceof AuthError ? err.message : 'Could not sign in.' };
   }
@@ -220,7 +223,6 @@ export async function demoLoginAction(): Promise<void> {
     orderBy: { createdAt: 'asc' },
   });
   if (!demo) redirect('/login?demo=missing');
-  const { createSession } = await import('@/server/auth/session');
-  await createSession({ userId: demo.id, email: demo.email });
+  await startSession({ userId: demo.id, email: demo.email });
   redirect('/dashboard');
 }

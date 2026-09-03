@@ -59,7 +59,7 @@ test('golden path: signup through verified remediation and report', async ({ pag
 
   await page.goto('/dashboard');
   await expect(page.getByText('Security Score')).toBeVisible();
-  await expect(page.getByText('Enable', { exact: false })).toBeTruthy();
+  await expect(page.getByText('Fix these first')).toBeVisible();
 
   // 8-13. Open the finding and read its guidance.
   await page.goto('/findings');
@@ -86,22 +86,25 @@ test('golden path: signup through verified remediation and report', async ({ pag
   expect(body.resolved).toBeGreaterThanOrEqual(1);
 
   await page.reload();
-  await expect(page.getByText('RESOLVED')).toBeVisible();
+  await expect(page.getByText('RESOLVED').first()).toBeVisible();
 
-  // 18. AI executive summary (degrades gracefully if no key).
+  // 18-19. Generate a report (AI degrades gracefully with no key) + PDF.
   await page.goto('/reports');
   await page.getByRole('button', { name: /Generate report/i }).click();
-  await expect(page).toHaveURL(/\/reports\//);
-  await expect(page.getByText('Executive summary')).toBeVisible();
-  await expect(page.getByText(/not a legal determination of regulatory compliance/i)).toBeVisible();
+  await expect(page).toHaveURL(/\/reports\/[a-z0-9]+$/);
+  await expect(page.getByRole('heading', { name: 'Executive summary' })).toBeVisible();
+  await expect(
+    page.getByText(/not a legal determination of regulatory compliance/i),
+  ).toBeVisible();
 
-  // 19. PDF downloads.
   const pdf = await page.request.get(page.url() + '/pdf');
   expect(pdf.headers()['content-type']).toContain('application/pdf');
+  expect((await pdf.body()).length).toBeGreaterThan(1000);
 
   // 20-21. Scan history + audit history.
   await page.goto('/scans');
-  await expect(page.getByText('AGENT_UPLOAD')).toBeVisible();
+  await expect(page.getByText('AGENT_UPLOAD').first()).toBeVisible();
   await page.goto('/activity');
-  await expect(page.getByText('scan.completed')).toBeVisible();
+  await expect(page.getByText('scan.completed').first()).toBeVisible();
+  await expect(page.getByText('organization.created').first()).toBeVisible();
 });

@@ -1,4 +1,3 @@
-import 'server-only';
 import { getCheck } from '@smb/checks';
 import { SCAN_SCHEMA_VERSION, type Platform, type SecurityScanResult } from '@smb/shared';
 

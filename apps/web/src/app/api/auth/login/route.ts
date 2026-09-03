@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { loginUser, AuthError } from '@/server/auth';
+import { authenticateUser, startSession, AuthError } from '@/server/auth';
 import { apiError, apiOk, assertSameOrigin, parseJson, route } from '@/server/http';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,8 @@ export function POST(req: Request) {
     assertSameOrigin();
     const body = await parseJson(req, schema);
     try {
-      await loginUser(body);
+      const identity = await authenticateUser(body);
+      await startSession(identity);
       return apiOk({ ok: true });
     } catch (err) {
       if (err instanceof AuthError) return apiError('unauthorized', err.message, 401);

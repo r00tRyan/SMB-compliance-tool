@@ -37,11 +37,27 @@ a demo asset and vice versa. Seeds are local-only and refuse to run when
 
 ## Testing layout
 - `packages/*/src/**/__tests__` — unit tests (checks, scoring, prioritization,
-  compliance mappings, lifecycle, prompt construction)
-- `apps/web/src/**/__tests__` — integration (auth, ingestion, authorization,
-  reports) and security (cross-tenant, malformed scan, forged severity)
-- `apps/web/e2e` — signup → org → asset → demo scan → score → finding → AI
-  summary → resolve → re-scan → score change → report
+  compliance mappings, prompt construction). `pnpm -r test`.
+- `apps/web/src/server/__tests__/lifecycle.test.ts` — pure finding-lifecycle
+  logic (no DB).
+- `apps/web/src/server/__tests__/integration.test.ts` — integration + security
+  (tenant isolation, malformed scan, unknown checkId, forged severity ignored,
+  detect → re-scan → resolved → score-up, regression reopen, no demo/real
+  mixing). Needs a `*_test` database or it self-skips:
+
+  ```bash
+  cd apps/web
+  DATABASE_URL="postgresql://smb:smb@127.0.0.1:5432/smb_test?schema=public" \
+    pnpm exec prisma migrate deploy
+  DATABASE_URL="postgresql://smb:smb@127.0.0.1:5432/smb_test?schema=public" \
+    AUTH_SECRET="test-secret-xxxxxxxxxxxxxxxx" NODE_ENV=test \
+    pnpm exec vitest run src/server/__tests__/
+  ```
+
+- `apps/web/e2e/golden-path.spec.ts` — Playwright: signup → org → asset →
+  ingest scan → score → finding → CIS/NIST → re-scan → RESOLVED → score
+  change → report → PDF → scan history → audit history. With the dev DB
+  migrated + seeded: `pnpm --filter @smb/web test:e2e`.
 
 ## Conventions
 - Prettier + ESLint enforced; run `pnpm format` before committing.

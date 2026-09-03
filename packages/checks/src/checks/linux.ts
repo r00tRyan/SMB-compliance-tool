@@ -290,7 +290,7 @@ export const linuxChecks: SecurityCheck[] = [
     evaluate(ctx) {
       const c = pick(ctx, 'lnx.osrelease');
       if (!c.ok) return collectorError(c, 'OS release');
-      const get = (k: string) => c.text.match(new RegExp(`^${k}=\"?([^\"\\n]+)\"?`, 'm'))?.[1];
+      const get = (k: string) => c.text.match(new RegExp(`^${k}="?([^"\\n]+)"?`, 'm'))?.[1];
       const id = get('ID');
       const ver = get('VERSION_ID');
       const pretty = get('PRETTY_NAME') ?? `${id ?? 'unknown'} ${ver ?? ''}`.trim();
@@ -391,9 +391,9 @@ export const linuxChecks: SecurityCheck[] = [
       const c = pick(ctx, 'lnx.autoupdates.status');
       if (!c.ok) return collectorError(c, 'automatic updates');
       const t = c.text;
-      if (/APT::Periodic::Unattended-Upgrade\s+\"?1\"?/.test(t)) return pass('unattended-upgrades enabled (Unattended-Upgrade "1")');
+      if (/APT::Periodic::Unattended-Upgrade\s+"?1"?/.test(t)) return pass('unattended-upgrades enabled (Unattended-Upgrade "1")');
       if (/dnf-automatic\S*\s+(active|enabled)/i.test(t) || /^enabled$/im.test(t)) return pass('dnf-automatic timer enabled');
-      if (/Unattended-Upgrade\s+\"?0\"?/.test(t) || includesAny(t, 'inactive', 'disabled', 'not-found', 'could not be found'))
+      if (/Unattended-Upgrade\s+"?0"?/.test(t) || includesAny(t, 'inactive', 'disabled', 'not-found', 'could not be found'))
         return fail('No automatic security-update mechanism is enabled');
       return warn('Could not confirm automatic security updates are enabled');
     },

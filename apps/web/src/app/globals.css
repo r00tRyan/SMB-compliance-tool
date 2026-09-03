@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-bg text-ink font-sans antialiased;
+}
+
+.card {
+  @apply bg-card border border-line rounded-xl p-5 shadow-sm;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors;
+}
+.btn-primary {
+  @apply btn bg-brand text-white hover:bg-blue-700;
+}
+.btn-ghost {
+  @apply btn border border-line bg-white hover:bg-slate-50;
+}
+
+.label {
+  @apply block text-sm font-medium text-muted mb-1;
+}
+.input {
+  @apply w-full rounded-lg border border-line px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand/40;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold;
+}
+.badge-CRITICAL { @apply bg-red-50 text-sev-critical; }
+.badge-HIGH { @apply bg-orange-50 text-sev-high; }
+.badge-MEDIUM { @apply bg-amber-50 text-sev-medium; }
+.badge-LOW { @apply bg-sky-50 text-sev-low; }
+.badge-INFO { @apply bg-slate-100 text-sev-info; }

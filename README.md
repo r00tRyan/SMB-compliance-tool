@@ -11,6 +11,24 @@ in plain English, and verifies fixes on re-scan.
 > security controls. It does **not** make legal or regulatory compliance
 > determinations, and no report it produces is an audit or certification.
 
+## Project status
+
+MVP under active construction. What exists and is verified:
+
+- **Core packages** — `shared`, `checks` (26 read-only Windows/Linux checks),
+  `risk-engine` (deterministic scoring), `compliance` (CIS v8 + NIST CSF 2.0
+  mapping), `ai` (Anthropic explanation layer with guardrails + graceful
+  fallback), `scanner` — all built and unit-tested (86 tests green).
+- **Scanner CLI** (`security-agent`) — verified running against a real Windows host.
+- **Web app** — Next.js app with Prisma schema, Argon2id auth, tenant-isolated
+  data access, the scan-ingestion trust boundary, dashboard / assets / findings /
+  finding detail / scans / reports / activity pages, demo mode, PDF export.
+  `pnpm typecheck`, `pnpm lint`, and `next build` all pass.
+
+Not yet run end-to-end in this environment: Prisma migrations, the demo seed, and
+the Playwright golden-path test — all need a running PostgreSQL (`docker compose up`
+or a local install). See [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
 ## The product loop
 
 **Discover → Assess → Prioritize → Explain → Remediate → Verify → Report**

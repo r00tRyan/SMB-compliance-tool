@@ -1,0 +1,233 @@
+// SMB Security Posture & Compliance Readiness Platform - data model.
+// Multi-tenant from the start: every organization-owned row carries
+// organizationId and is only ever loaded through the withOrg() helpers.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Platform {
+  windows
+  linux
+}
+
+enum AssetStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum FindingStatus {
+  OPEN
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  ACCEPTED_RISK
+  FALSE_POSITIVE
+}
+
+enum ScanStatus {
+  COMPLETED
+  FAILED
+}
+
+enum ScanSource {
+  AGENT_UPLOAD
+  DEMO
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  passwordResets PasswordReset[]
+  auditLogs    AuditLog[]
+}
+
+model Organization {
+  id         String       @id @default(cuid())
+  name       String
+  isDemo     Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  members    Membership[]
+  assets     Asset[]
+  scans      Scan[]
+  findings   Finding[]
+  reports    Report[]
+  auditLogs  AuditLog[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  role           Role         @default(MEMBER)
+  userId         String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Asset {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  platform       Platform
+  description    String?
+  status         AssetStatus  @default(ACTIVE)
+  isDemo         Boolean      @default(false)
+  lastScanAt     DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scans          Scan[]
+  findings       Finding[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Scan {
+  id             String       @id @default(cuid())
+  organizationId String
+  assetId        String
+  status         ScanStatus   @default(COMPLETED)
+  source         ScanSource
+  scannerVersion String
+  schemaVersion  String
+  startedAt      DateTime
+  completedAt    DateTime
+  // score snapshot for the whole org at the time this scan completed
+  orgScoreAfter  Int?
+  orgScoreBefore Int?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  results        ScanResult[]
+
+  @@index([organizationId, createdAt])
+  @@index([assetId])
+}
+
+// One row per check evaluated in a scan (Detection, verbatim).
+model ScanResult {
+  id        String   @id @default(cuid())
+  scanId    String
+  checkId   String
+  // status as reported by the scanner: PASS | FAIL | WARN | ERROR | NOT_APPLICABLE
+  status    String
+  evidence  String
+  observedAt DateTime
+  scan      Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+  @@index([checkId])
+}
+
+// The tracked, deduplicated problem. One OPEN finding per (asset, checkId).
+model Finding {
+  id             String        @id @default(cuid())
+  organizationId String
+  assetId        String
+  checkId        String
+  // AUTHORITATIVE values, copied from @smb/checks at ingestion - never from the upload
+  severity       Severity
+  category       String
+  status         FindingStatus @default(OPEN)
+  previousStatus FindingStatus?
+  // latest observed detection
+  lastStatusRaw  String
+  lastEvidence   String
+  firstDetectedAt DateTime
+  lastDetectedAt  DateTime
+  resolvedAt     DateTime?
+  resolvedById   String?
+  note           String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asset          Asset         @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  events         FindingEvent[]
+
+  @@unique([assetId, checkId])
+  @@index([organizationId, status])
+  @@index([organizationId, severity])
+}
+
+model FindingEvent {
+  id         String        @id @default(cuid())
+  findingId  String
+  fromStatus FindingStatus?
+  toStatus   FindingStatus
+  reason     String
+  actor      String        // "system:ingestion" | "system:rescan" | user id
+  createdAt  DateTime      @default(now())
+  finding    Finding       @relation(fields: [findingId], references: [id], onDelete: Cascade)
+
+  @@index([findingId])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  orgScore       Int
+  band           String
+  // frozen JSON snapshot of the full report (provenance-tagged sections)
+  snapshot       Json
+  includedAiNarrative Boolean @default(false)
+  aiDegraded     Boolean      @default(false)
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  userId         String?
+  action         String
+  // small JSON detail bag; never contains secrets
+  detail         Json?
+  createdAt      DateTime      @default(now())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+}

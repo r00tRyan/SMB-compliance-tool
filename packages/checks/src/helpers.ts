@@ -31,7 +31,7 @@ export function haveAll(ctx: CheckContext, ...ids: string[]): boolean {
 export function parseKv(text: string): Record<string, string> {
   const out: Record<string, string> = {};
   for (const line of text.split(/\r?\n/)) {
-    const m = line.match(/^\s*([A-Za-z0-9 _.\-]+?)\s*[:=]\s*(.+?)\s*$/);
+    const m = line.match(/^\s*([A-Za-z0-9 _.-]+?)\s*[:=]\s*(.+?)\s*$/);
     if (m && m[1] && m[2] !== undefined) out[m[1].trim().toLowerCase()] = m[2].trim();
   }
   return out;

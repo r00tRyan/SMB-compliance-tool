@@ -15,7 +15,7 @@
     "build": "tsup",
     "start": "node --experimental-strip-types src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src --config ../../eslint.config.mjs",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,64 +1,78 @@
 # Security Checks
 
 The authoritative definition of every check lives in
-`packages/checks/src/checks/` — one file per check implementing the
-`SecurityCheck` interface. This document is generated-in-spirit from those
-definitions; when they change, update this table.
+`packages/checks/src/checks/` (`windows.ts`, `linux.ts`), one object per check
+implementing the `SecurityCheck` interface. The registry
+(`packages/checks/src/registry.ts`) validates ids and severities at load. This
+document mirrors that registry — regenerate the tables when checks change.
 
 Each check declares: `id`, `name`, `description`, `platform`, `category`,
-`severity`, `rationale`, the read-only `collector` command(s) it uses,
-`evaluate(evidence)` logic, `remediation` (what/why/fix/owner/effort/verify),
-`frameworks` (CIS + NIST CSF), `references`, and `autoRemediationSupported`
-(always `false` in the MVP).
+`severity`, `rationale`, the read-only `collectors` it uses, `evaluate(ctx)`
+logic, `remediation` (whatWeFound / whyItMatters / recommendedFix / who / effort
+/ verification / optional warning), `frameworks` (one CIS Controls v8 + one NIST
+CSF 2.0 control), `references`, and `autoRemediationSupported` (always `false` in
+the MVP).
 
 ## Categories
 `Identity & Access` · `Endpoint Security` · `Network Security` ·
 `Patch Management` · `Data Protection` · `Logging & Monitoring`
 
-## Windows checks
-| ID | Name | Category | Sev | Read-only collector |
-| --- | --- | --- | --- | --- |
-| WIN-EPP-001 | Defender real-time protection enabled | Endpoint Security | HIGH | `Get-MpComputerStatus` |
-| WIN-EPP-002 | Defender signatures current | Endpoint Security | MEDIUM | `Get-MpComputerStatus` |
-| WIN-EPP-003 | Security Center reports AV healthy | Endpoint Security | MEDIUM | `SecurityCenter2` WMI |
-| WIN-FW-001 | Firewall enabled (all profiles) | Network Security | HIGH | `netsh advfirewall show allprofiles state` |
-| WIN-PATCH-001 | Supported Windows build | Patch Management | HIGH | `Get-ComputerInfo` |
-| WIN-PATCH-002 | Recent quality update installed | Patch Management | MEDIUM | `Get-HotFix` |
-| WIN-PATCH-003 | Pending security updates | Patch Management | MEDIUM | Windows Update COM (read) |
-| WIN-AUTH-001 | Guest account disabled | Identity & Access | HIGH | `Get-LocalUser` |
-| WIN-AUTH-002 | Password policy meets baseline | Identity & Access | MEDIUM | `net accounts` |
-| WIN-AUTH-003 | Account lockout configured | Identity & Access | MEDIUM | `net accounts` |
-| WIN-AUTH-004 | Local administrators reviewed | Identity & Access | MEDIUM | `Get-LocalGroupMember Administrators` |
-| WIN-AUTH-005 | No stale local accounts | Identity & Access | LOW | `Get-LocalUser` |
-| WIN-RDP-001 | RDP disabled unless required | Network Security | MEDIUM | `fDenyTSConnections` registry (read) |
-| WIN-RDP-002 | RDP requires Network Level Authentication | Network Security | HIGH | `UserAuthentication` registry (read) |
-| WIN-CFG-001 | UAC enabled | Endpoint Security | HIGH | `EnableLUA` registry (read) |
-| WIN-CFG-002 | Screen lock / inactivity timeout set | Identity & Access | MEDIUM | screensaver policy registry (read) |
-| WIN-SMB-001 | SMBv1 disabled | Network Security | HIGH | `Get-WindowsOptionalFeature` / registry |
-| WIN-DATA-001 | BitLocker protecting the system drive | Data Protection | HIGH | `Get-BitLockerVolume` |
-| WIN-LOG-001 | Security auditing enabled | Logging & Monitoring | MEDIUM | `auditpol /get /category:*` |
-| WIN-LOG-002 | Security event log adequately sized | Logging & Monitoring | LOW | `Get-WinEvent -ListLog Security` |
-| WIN-NET-001 | Listening-service inventory reviewed | Network Security | LOW | `Get-NetTCPListener` |
+## Current registry — 26 checks (15 Windows, 11 Linux)
 
-## Linux checks
-| ID | Name | Category | Sev | Read-only collector |
-| --- | --- | --- | --- | --- |
-| LNX-FW-001 | Host firewall active | Network Security | HIGH | `ufw status` / `firewall-cmd --state` / `nft list ruleset` |
-| LNX-NET-001 | Listening-service inventory reviewed | Network Security | LOW | `ss -tulpn` |
-| LNX-SSH-001 | SSH root login disabled | Identity & Access | HIGH | read `sshd_config` (+ `sshd -T`) |
-| LNX-SSH-002 | SSH password auth disabled (keys only) | Identity & Access | MEDIUM | read `sshd_config` |
-| LNX-SSH-003 | SSH not on default port / rate-limited | Network Security | LOW | read `sshd_config` |
-| LNX-AUTH-001 | No non-root UID 0 accounts | Identity & Access | HIGH | read `/etc/passwd` |
-| LNX-AUTH-002 | Sudoers has no unrestricted NOPASSWD | Identity & Access | MEDIUM | read `/etc/sudoers`, `/etc/sudoers.d/*` |
-| LNX-AUTH-003 | Failed-login protection present | Identity & Access | MEDIUM | `fail2ban`/`sshguard` unit state |
-| LNX-PATCH-001 | Supported OS release | Patch Management | HIGH | `/etc/os-release` |
-| LNX-PATCH-002 | Security updates available | Patch Management | MEDIUM | `apt-get -s`/`dnf updateinfo` (read) |
-| LNX-PATCH-003 | Automatic security updates enabled | Patch Management | MEDIUM | `unattended-upgrades`/`dnf-automatic` config |
-| LNX-LOG-001 | Audit logging (auditd) active | Logging & Monitoring | MEDIUM | `systemctl is-active auditd` |
-| LNX-CFG-001 | Sensitive file permissions correct | Data Protection | MEDIUM | `stat` on `/etc/shadow`, `/etc/passwd`, keys |
-| LNX-CFG-002 | No world-writable files in sensitive paths | Data Protection | MEDIUM | `find` in `/etc`, `/usr/local` (bounded) |
-| LNX-DATA-001 | Disk encryption present | Data Protection | MEDIUM | `lsblk`/`dmsetup` for LUKS |
+The spec targets "20–30 high-value checks". Severity shown is the registry value
+the server enforces on ingestion (THREAT_MODEL T3); the uploaded scan's severity
+is ignored.
 
-Severity shown here is the registry value the server enforces (T3 in the threat
-model). Full rationale, remediation steps, and framework mappings are in each
-check's source file.
+### Windows
+| ID | Name | Category | Severity |
+| --- | --- | --- | --- |
+| WIN-AUTH-001 | Built-in Guest account is disabled | Identity & Access | HIGH |
+| WIN-AUTH-002 | Password policy meets a baseline | Identity & Access | MEDIUM |
+| WIN-AUTH-003 | Account lockout policy is configured | Identity & Access | MEDIUM |
+| WIN-AUTH-004 | Local Administrators group is small | Identity & Access | MEDIUM |
+| WIN-CFG-001 | User Account Control (UAC) is enabled | Endpoint Security | HIGH |
+| WIN-DATA-001 | BitLocker protects the system drive | Data Protection | HIGH |
+| WIN-EPP-001 | Microsoft Defender real-time protection enabled | Endpoint Security | HIGH |
+| WIN-EPP-002 | Defender antivirus definitions are current | Endpoint Security | MEDIUM |
+| WIN-FW-001 | Windows Firewall enabled on all profiles | Network Security | HIGH |
+| WIN-LOG-001 | Windows security auditing is enabled | Logging & Monitoring | MEDIUM |
+| WIN-PATCH-001 | Windows build is a supported release | Patch Management | HIGH |
+| WIN-PATCH-002 | A recent Windows quality update is installed | Patch Management | MEDIUM |
+| WIN-RDP-001 | Remote Desktop is disabled unless required | Network Security | MEDIUM |
+| WIN-RDP-002 | Remote Desktop requires Network Level Authentication | Network Security | HIGH |
+| WIN-SMB-001 | SMBv1 is disabled | Network Security | HIGH |
+
+### Linux
+| ID | Name | Category | Severity |
+| --- | --- | --- | --- |
+| LNX-AUTH-001 | No unexpected UID 0 (root-equivalent) accounts | Identity & Access | HIGH |
+| LNX-AUTH-002 | Sudoers has no blanket NOPASSWD access | Identity & Access | MEDIUM |
+| LNX-AUTH-003 | Brute-force protection for SSH is present | Identity & Access | MEDIUM |
+| LNX-CFG-001 | Sensitive files have safe permissions | Data Protection | MEDIUM |
+| LNX-FW-001 | A host firewall is active | Network Security | HIGH |
+| LNX-LOG-001 | Audit logging (auditd) is active | Logging & Monitoring | MEDIUM |
+| LNX-PATCH-001 | Operating system release is identifiable and current | Patch Management | HIGH |
+| LNX-PATCH-002 | No pending security updates | Patch Management | MEDIUM |
+| LNX-PATCH-003 | Automatic security updates are enabled | Patch Management | MEDIUM |
+| LNX-SSH-001 | SSH root login is disabled | Identity & Access | HIGH |
+| LNX-SSH-002 | SSH password authentication is disabled | Identity & Access | MEDIUM |
+
+## Read-only collectors
+
+Every `collectors` id maps to a fixed, documented command in
+`packages/scanner/src/collectors/catalog.ts`, run with `execFile` (no shell).
+Examples: `Get-MpComputerStatus`, `netsh advfirewall show allprofiles state`,
+`Get-BitLockerVolume`, `auditpol /get /category:*`, registry reads for
+`fDenyTSConnections` / `UserAuthentication` / `EnableLUA`; `sshd -T`,
+`cat /etc/passwd`, `stat` on `/etc/shadow`, `ufw status`, `apt-get -s upgrade`,
+`systemctl is-active auditd`. A collector that cannot run yields a
+`CheckOutcome` of `ERROR` ("could not assess") — never a silent pass.
+
+## Room to grow
+
+The interface is built so a new check is a single object added to `windows.ts`
+or `linux.ts` (plus a collector entry if it needs a new data source). Natural
+next additions: Defender Security Center health, stale local accounts, screen-lock
+timeout, BitLocker recovery-key escrow, Windows listening-service inventory;
+Linux SSH port/rate-limit, world-writable file sweep, LUKS disk-encryption
+detection, `sshd` MACs/ciphers.
